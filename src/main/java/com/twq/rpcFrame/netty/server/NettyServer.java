@@ -1,6 +1,8 @@
-package com.twq.netty.server;
+package com.twq.rpcFrame.netty.server;
 
 
+import com.twq.rpcFrame.netty.client.NettyClientInitializer;
+import com.twq.rpcFrame.provider.ServiceProvider;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -11,14 +13,18 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
+import lombok.AllArgsConstructor;
 
 /**
+ * Rpc服务
  * @Author: tangwq
  * @Description: 
 */
-
-
+@AllArgsConstructor //自动生成全参构造函数
 public class NettyServer {
+
+    //这个变量贯穿整个RPC请求的服务端，(所有这个变量 他都是相同的对象)因为需要注册服务接口和实现类的映射。
+    private ServiceProvider serviceProvider;
 
 
     /**
@@ -26,7 +32,7 @@ public class NettyServer {
      * @param host
      * @param port
      */
-    public static void startServer(String host, int port){
+    public  void startServer(String host, int port){
         startServer0(host,port);
     }
 
@@ -35,7 +41,7 @@ public class NettyServer {
      * @param host
      * @param port
      */
-    private static void startServer0(String host, int port){
+    private  void startServer0(String host, int port){
 
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -45,15 +51,7 @@ public class NettyServer {
             ServerBootstrap serverBootstrap = new ServerBootstrap();
             serverBootstrap.group(bossGroup,workerGroup)
                     .channel(NioServerSocketChannel.class)
-                    .childHandler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        protected void initChannel(SocketChannel socketChannel) throws Exception {
-                            ChannelPipeline pipeline = socketChannel.pipeline();
-                            pipeline.addLast(new StringDecoder());//解码器
-                            pipeline.addLast(new StringEncoder());//编码器
-                            pipeline.addLast(new NettyServerHandler()); // 业务处理器
-                        }
-                    });
+                    .childHandler(new NettyServerInitializer(serviceProvider));
 
 
             ChannelFuture channelFuture = serverBootstrap.bind(host, port).sync();

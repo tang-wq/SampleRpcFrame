@@ -1,21 +1,21 @@
-package com.twq.netty.client;
+package com.twq.rpcFrame.netty.client;
 
-import com.sun.corba.se.internal.CosNaming.BootstrapServer;
+import com.twq.rpcFrame.entity.RpcRequest;
+import com.twq.rpcFrame.netty.ThreadPool.SampleThreadPool;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @Author: tangwq
@@ -30,14 +30,14 @@ public class NettyClient {
      * 2、使用其call方法进行RPC调用。很方便。
      */
     // 创建线程池
-    private static ExecutorService executorService = new SampleThreadPool().getExecutorService();
-    //private static ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    //private static ExecutorService executorService = new SampleThreadPool().getExecutorService();
+    private static ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private static NettyClientHandler clientHandler;
 
     // 使用代理模式 获取代理对象
-    public Object getBean(final Class<?> serviceClass, final String providerName){
+    public Object getBean(final Class<?> serviceClass){
 
-
+        initClient(); //初始化RPC客户端
 
         /**
          * 通过Proxy.newProxyInstance代理方法 获取一个代理对象
@@ -63,11 +63,17 @@ public class NettyClient {
                         if(clientHandler==null){
                             initClient(); //初始化RPC客户端
                         }
+                        // 初始化RpcRequest对象， 并赋值。 使用了lombok中的builder，代码简洁
+                        // 获得请求的1、接口名 2、方法名 3、方法的参数 4、参数类型
+                        System.out.println(method.getDeclaringClass().getName());
+                        RpcRequest rpcRequest = RpcRequest.builder().interfaceName(method.getDeclaringClass().getName())
+                                .methodName(method.getName()).params(args).paramsTypes(method.getParameterTypes()).build();
+
                         // args 实际上就是被代理对象（方法）传入参数
-                        clientHandler.setParam(providerName+args[0]);
+                        clientHandler.setParam(rpcRequest);
 
                         //将任务提交到线程池， 它会自动调用里面的Call方法 ，这就是我们自定义的NettyClientHandler为什么要继承Callable的原因
-                        // 调用 Call方法 就执行了 RPC请求 ， 获取线程执行的结果，线程池会自动执行 callable的call方法。
+                        // 线程池会自动执行 callable的call方法，在clientHandler中重写了Call方法，会发送参数到服务端
                         return executorService.submit(clientHandler).get();
                    // }
                 }
@@ -86,20 +92,11 @@ public class NettyClient {
         bootstrap.group(group)
                 .channel(NioSocketChannel.class)
                 .option(ChannelOption.TCP_NODELAY,true)
-                .handler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    protected void initChannel(SocketChannel socketChannel) throws Exception {
-                        ChannelPipeline pipeline = socketChannel.pipeline();
-                        pipeline.addLast(new StringDecoder());
-                        pipeline.addLast(new StringEncoder());
-                        pipeline.addLast(clientHandler);
-                    }
-
-                });
+                .handler(new NettyClientInitializer(clientHandler)); //初始化器
 
 
         try {
-            ChannelFuture channelFuture =bootstrap.connect("127.0.0.1",7000).sync();
+            bootstrap.connect("127.0.0.1",7000).sync();
 
             // 将Main线程阻塞在这。 https://blog.csdn.net/m0_45406092/article/details/104394617
             //channelFuture.channel().closeFuture().sync();

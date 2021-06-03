@@ -1,5 +1,7 @@
-package com.twq.netty.client;
+package com.twq.rpcFrame.netty.client;
 
+import com.twq.rpcFrame.entity.RpcRequest;
+import com.twq.rpcFrame.entity.RpcResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -12,8 +14,8 @@ import java.util.concurrent.Callable;
 public class NettyClientHandler extends ChannelInboundHandlerAdapter implements Callable {
 
     private ChannelHandlerContext context; //上下文  其他方法会使用这个上下文
-    private String result; //返回的结果
-    private String param; //客户端调用方法时传入的参数
+    private RpcResponse result; //返回的结果
+    private RpcRequest transportParam; //传输数据对象
 
     /**
      * 与服务器创建连接后 自动调用
@@ -34,8 +36,8 @@ public class NettyClientHandler extends ChannelInboundHandlerAdapter implements 
      */
     @Override
     public synchronized void  channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-
-        result = msg.toString();
+        // 获取服务端的响应对象
+        result = (RpcResponse) msg;
         //唤醒等待的线程
         notify();
     }
@@ -52,22 +54,31 @@ public class NettyClientHandler extends ChannelInboundHandlerAdapter implements 
     public synchronized Object call() throws Exception {
 
         //发送数据 给服务端。
-        context.writeAndFlush(param);
+        context.writeAndFlush(transportParam);
         //进入等待,等待channelRead获取服务端返回值后，被其唤醒
         wait();
-        return result;
+        return result.getData();
     }
 
     /**
      * 设置传递数据的方法
      * @param param
      */
-    void setParam(String param){
-        this.param = param;
+    void setParam(RpcRequest param){
+        System.out.println(param);
+        this.transportParam = param;
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         ctx.close();
+    }
+
+    public ChannelHandlerContext getContext() {
+        return context;
+    }
+
+    public void setContext(ChannelHandlerContext context) {
+        this.context = context;
     }
 }

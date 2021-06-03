@@ -1,6 +1,8 @@
 package com.twq.consumer;
 
-import com.twq.netty.client.NettyClient;
+import com.twq.publicInterface.UserService;
+import com.twq.rpcFrame.entity.User;
+import com.twq.rpcFrame.netty.client.NettyClient;
 import com.twq.publicInterface.HelloService;
 
 /**
@@ -20,14 +22,14 @@ public class ConsumerBootStrap {
         NettyClient customer = new NettyClient();
 
         // 获取代理对象。
-        HelloService helloService = (HelloService) customer.getBean(HelloService.class, providerName);
-
+        //HelloService helloService = (HelloService) customer.getBean(HelloService.class);
+        UserService userService = (UserService) customer.getBean(UserService.class);
 
 
         for (int i=0;i<2 ;i++ ) {  // 一直RPC请求
-            //Thread.sleep(1000);
+            //Thread.sleep(10000);
             //这里实际上时调用代理的hello方法， 会触发 invoke （具体在getBean里面 重写了 invoke方法） ，从而调用call。
-            String res = helloService.hello("hello my rpc");
+            String res = userService.toString();
             System.out.println("RPC return is" + res);
         }
     }
