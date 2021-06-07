@@ -4,6 +4,7 @@ import com.twq.rpcFrame.entity.RpcRequest;
 import com.twq.rpcFrame.entity.RpcResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.util.concurrent.Callable;
 
@@ -11,7 +12,7 @@ import java.util.concurrent.Callable;
  * @Author: tangwq
  * @Description:
  */
-public class NettyClientHandler extends ChannelInboundHandlerAdapter implements Callable {
+public class NettyClientHandler extends SimpleChannelInboundHandler implements Callable {
 
     private ChannelHandlerContext context; //上下文  其他方法会使用这个上下文
     private RpcResponse result; //返回的结果
@@ -23,6 +24,7 @@ public class NettyClientHandler extends ChannelInboundHandlerAdapter implements 
      */
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception{
+        System.out.println("连接成功-------------------------------");
         context = ctx; // 获取连接的上下文。
     }
 
@@ -35,7 +37,7 @@ public class NettyClientHandler extends ChannelInboundHandlerAdapter implements 
      * @throws Exception
      */
     @Override
-    public synchronized void  channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    public synchronized void  channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
         // 获取服务端的响应对象
         result = (RpcResponse) msg;
         //唤醒等待的线程
@@ -49,13 +51,18 @@ public class NettyClientHandler extends ChannelInboundHandlerAdapter implements 
      * @return
      * @throws Exception
      */
-
     @Override
     public synchronized Object call() throws Exception {
 
         //发送数据 给服务端。
         context.writeAndFlush(transportParam);
         //进入等待,等待channelRead获取服务端返回值后，被其唤醒
+        /**
+         * todo  这里属于同步，必须等服务端返回值时才会被唤醒。  看看后期是否可以改成异步的形式
+         * 可以通过异步回调的形式， 来异步返回结果
+         * context.writeAndFlush(rpcRequest).addListener((ChannelFutureListener) future1 ->
+         */
+
         wait();
         return result.getData();
     }

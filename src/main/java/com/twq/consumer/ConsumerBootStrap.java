@@ -29,7 +29,7 @@ public class ConsumerBootStrap {
         for (int i=0;i<2 ;i++ ) {  // 一直RPC请求
             //Thread.sleep(10000);
             //这里实际上时调用代理的hello方法， 会触发 invoke （具体在getBean里面 重写了 invoke方法） ，从而调用call。
-            String res = userService.toString();
+            User res = userService.getUser();
             System.out.println("RPC return is" + res);
         }
     }

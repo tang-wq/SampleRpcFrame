@@ -65,14 +65,14 @@ public class HessianSerializer implements CommonSerializer{
     }
 
 
-    public static void main(String[] args) {
-        HessianSerializer jsonSerializer = new HessianSerializer();
-        User user = new User("TWQ",11);
-        RpcRequest rpcRequest = new RpcRequest("aaaa","bbbbb",new Object[] {"1111",123,user},new Class[]{String.class,Integer.class,User.class});
-        byte [] by = jsonSerializer.serialize(rpcRequest);
-
-        RpcRequest rpcRequest1 = (RpcRequest) jsonSerializer.deserialize(by, RpcRequest.class);
-        System.out.println(rpcRequest1.getInterfaceName());
-    }
+//    public static void main(String[] args) {
+//        HessianSerializer jsonSerializer = new HessianSerializer();
+//        User user = new User("TWQ",11);
+//        RpcRequest rpcRequest = new RpcRequest("aaaa","bbbbb",new Object[] {"1111",123,user},new Class[]{String.class,Integer.class,User.class});
+//        byte [] by = jsonSerializer.serialize(rpcRequest);
+//
+//        RpcRequest rpcRequest1 = (RpcRequest) jsonSerializer.deserialize(by, RpcRequest.class);
+//        System.out.println(rpcRequest1.getInterfaceName());
+//    }
 
 }

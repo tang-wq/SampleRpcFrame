@@ -59,16 +59,16 @@ public class JsonSerializer implements CommonSerializer{
         return CommonSerializer.JSON_SERIALIZER;
     }
 
-    public static void main(String[] args) {
-        JsonSerializer jsonSerializer = new JsonSerializer();
-        User user = new User("TWQ",11);
-        user.setAge(11);
-        user.setName("TWQ");
-        RpcRequest rpcRequest = new RpcRequest("aaaa","bbbbb",new Object[] {"1111",123,user},new Class[]{String.class,Integer.class,User.class});
-        byte [] by = jsonSerializer.serialize(rpcRequest);
-
-        RpcRequest rpcRequest1 = (RpcRequest) jsonSerializer.deserialize(by, RpcRequest.class);
-        System.out.println(rpcRequest1.getInterfaceName());
-    }
+//    public static void main(String[] args) {
+//        JsonSerializer jsonSerializer = new JsonSerializer();
+//        User user = new User("TWQ",11);
+//        user.setAge(11);
+//        user.setName("TWQ");
+//        RpcRequest rpcRequest = new RpcRequest("aaaa","bbbbb",new Object[] {"1111",123,user},new Class[]{String.class,Integer.class,User.class});
+//        byte [] by = jsonSerializer.serialize(rpcRequest);
+//
+//        RpcRequest rpcRequest1 = (RpcRequest) jsonSerializer.deserialize(by, RpcRequest.class);
+//        System.out.println(rpcRequest1.getInterfaceName());
+//    }
 }
 

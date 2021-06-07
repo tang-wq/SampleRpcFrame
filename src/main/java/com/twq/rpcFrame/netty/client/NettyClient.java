@@ -1,7 +1,9 @@
 package com.twq.rpcFrame.netty.client;
 
 import com.twq.rpcFrame.entity.RpcRequest;
+import com.twq.rpcFrame.entity.RpcService;
 import com.twq.rpcFrame.netty.ThreadPool.SampleThreadPool;
+import com.twq.rpcFrame.register.NacosServiceDiscovery;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -32,12 +34,38 @@ public class NettyClient {
     // 创建线程池
     //private static ExecutorService executorService = new SampleThreadPool().getExecutorService();
     private static ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
     private static NettyClientHandler clientHandler;
+
+    //启动器
+    private static final Bootstrap bootstrap;
+
+    private  NacosServiceDiscovery nacosServiceDiscovery;
+
+
+    //从注册中心获得的Service对象
+    private RpcService rpcService;
+
+    // 静态代码块 初始化一部分Netty客户端配置（代码的复用）。
+    static {
+
+
+        //创建EventLoopGroup
+        NioEventLoopGroup group = new NioEventLoopGroup();
+        bootstrap = new Bootstrap();
+        bootstrap.group(group)
+                .channel(NioSocketChannel.class)
+                .option(ChannelOption.TCP_NODELAY,true);
+                //.handler(new NettyClientInitializer(clientHandler)); //初始化器
+    }
+
+    public NettyClient(){
+        nacosServiceDiscovery = new NacosServiceDiscovery();
+    }
 
     // 使用代理模式 获取代理对象
     public Object getBean(final Class<?> serviceClass){
 
-        initClient(); //初始化RPC客户端
 
         /**
          * 通过Proxy.newProxyInstance代理方法 获取一个代理对象
@@ -60,14 +88,23 @@ public class NettyClient {
 //                    @Override
 //                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 
-                        if(clientHandler==null){
-                            initClient(); //初始化RPC客户端
-                        }
+
                         // 初始化RpcRequest对象， 并赋值。 使用了lombok中的builder，代码简洁
                         // 获得请求的1、接口名 2、方法名 3、方法的参数 4、参数类型
                         System.out.println(method.getDeclaringClass().getName());
                         RpcRequest rpcRequest = RpcRequest.builder().interfaceName(method.getDeclaringClass().getName())
                                 .methodName(method.getName()).params(args).paramsTypes(method.getParameterTypes()).build();
+
+                        // 从Nacos注册中心获取服务的信息
+                        rpcService = nacosServiceDiscovery.getSingleService(method.getDeclaringClass().getName());
+                        if(rpcService==null){
+                            return null;
+                        }
+                        //启动Rpc连接   （相同的IP和相同的端口，有必要重复调用连接么）
+                        clientHandler = new NettyClientHandler();
+                        bootstrap.handler(new NettyClientInitializer(clientHandler)); //初始化器
+                        bootstrap.connect(rpcService.getAddrHost(),rpcService.getPort()).sync();
+
 
                         // args 实际上就是被代理对象（方法）传入参数
                         clientHandler.setParam(rpcRequest);
@@ -80,29 +117,6 @@ public class NettyClient {
         );
 
         return bean;
-    }
-
-    // 初始化客户端
-    private static void initClient(){
-        clientHandler = new NettyClientHandler();
-
-        //创建EventLoopGroup
-        NioEventLoopGroup group = new NioEventLoopGroup();
-        Bootstrap bootstrap = new Bootstrap();
-        bootstrap.group(group)
-                .channel(NioSocketChannel.class)
-                .option(ChannelOption.TCP_NODELAY,true)
-                .handler(new NettyClientInitializer(clientHandler)); //初始化器
-
-
-        try {
-            bootstrap.connect("127.0.0.1",7000).sync();
-
-            // 将Main线程阻塞在这。 https://blog.csdn.net/m0_45406092/article/details/104394617
-            //channelFuture.channel().closeFuture().sync();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
 }

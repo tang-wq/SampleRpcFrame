@@ -1,8 +1,11 @@
 package com.twq.rpcFrame.provider;
 
+import com.twq.rpcFrame.configUtil.YamlReader;
+import com.twq.rpcFrame.register.NacosServiceRegister;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -14,16 +17,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * 1、提供暴露服务功能，
  * （其实就是在本地先注册对应的服务类，与注册中心的注册服务不同。这里是为了调用服务对应的方法，注册中心（zookepper/nocas）主要是为了找到服务的所在地）
  *  客户端他只知道接口，而不知道他具体的实现类。 因此本地存储的是接口和实现类的映射
- *
  *  todo  这里存在一个问题没处理，就是当一个服务接口有多个实现类(接口多实现)，那么该如何处理。 目前默认一个服务接口只有一个实现类。
- *
- *
- * 2、todo 本地注册完成后，需要向注册中心Zookepper/nocas在注册服务所在的地址。
- *
+ * 2、Nacos注册中心注册服务
  * 3、提供Rpc请求后返回对应的服务。
- *
- *
- *
  * @Author: tangwq
  */
 public class ServiceProvider {
@@ -33,8 +29,11 @@ public class ServiceProvider {
     // 这里默认了一个服务接口只有一个实现类。
     Map<String, Object> serviceInterface;
 
+    NacosServiceRegister nacosServiceRegister;
+
     public ServiceProvider(){
         serviceInterface = new ConcurrentHashMap<>();
+        nacosServiceRegister = new NacosServiceRegister();
     }
 
     public void addServiceProvider(Object service){
@@ -45,9 +44,17 @@ public class ServiceProvider {
             return;
         }
 
+        //从配置文件中读取本机IP和端口
+        String addrHost = (String) YamlReader.instance.getValueByKey("addrHost");
+        int port = (int) YamlReader.instance.getValueByKey("port");
+
         for(Class clazz: interfaces){
             // 存储服务接口和实现类的映射
             serviceInterface.put(clazz.getName(),service);
+
+            //注册服务到注册中心
+            nacosServiceRegister.registerService(clazz.getName(),new InetSocketAddress(addrHost,port));
+
             logger.info("向接口: {} 注册服务: {}", clazz.getName(),service.getClass().getName());
         }
     }
