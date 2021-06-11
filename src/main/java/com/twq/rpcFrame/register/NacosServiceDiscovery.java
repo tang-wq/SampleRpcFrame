@@ -2,6 +2,8 @@ package com.twq.rpcFrame.register;
 
 import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.twq.rpcFrame.entity.RpcService;
+import com.twq.rpcFrame.loadBanlance.LoadBalance;
+import com.twq.rpcFrame.loadBanlance.RoundRobinLoadBalance;
 import com.twq.rpcFrame.nacos.NacosUtil;
 
 import java.util.ArrayList;
@@ -13,6 +15,11 @@ import java.util.List;
  * @Author: tangwq
  */
 public class NacosServiceDiscovery implements ServiceDiscovery{
+
+    //负载均衡器
+    // todo 后期要改成可配置的负载均衡， 这里是写死的 不是很灵活
+    private LoadBalance loadBalance = new RoundRobinLoadBalance();
+
     @Override
     public List<RpcService> descoverAllServices(String serviceName) {
         //获取Nacos注册中心的服务实例
@@ -25,6 +32,16 @@ public class NacosServiceDiscovery implements ServiceDiscovery{
         }
 
         return services;
+    }
+
+    /**
+     * 使用自定义负载均衡获取服务
+     * @param serviceName
+     * @return
+     */
+    public RpcService getServiceBySelfDefinLoadBalance(String serviceName){
+        List<RpcService> rpcServiceList = descoverAllServices(serviceName);
+        return loadBalance.select(rpcServiceList);
     }
 
     /**

@@ -13,6 +13,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
+import io.netty.util.concurrent.DefaultEventExecutorGroup;
+import io.netty.util.concurrent.EventExecutorGroup;
 import lombok.AllArgsConstructor;
 
 /**
@@ -25,6 +27,8 @@ public class NettyServer {
 
     //这个变量贯穿整个RPC请求的服务端，(所有这个变量 他都是相同的对象)因为需要注册服务接口和实现类的映射。
     private ServiceProvider serviceProvider;
+
+    private static EventExecutorGroup eventExecutors = new DefaultEventExecutorGroup(5);
 
 
     /**
@@ -43,15 +47,16 @@ public class NettyServer {
      */
     private  void startServer0(String host, int port){
 
-        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        EventLoopGroup bossGroup = new NioEventLoopGroup(1); //I/O线程池
+        EventLoopGroup workerGroup = new NioEventLoopGroup(); // I/O线程池
+
 
         try {
 
             ServerBootstrap serverBootstrap = new ServerBootstrap();
             serverBootstrap.group(bossGroup,workerGroup)
                     .channel(NioServerSocketChannel.class)
-                    .childHandler(new NettyServerInitializer(serviceProvider));
+                    .childHandler(new NettyServerInitializer(serviceProvider,eventExecutors));
 
 
             ChannelFuture channelFuture = serverBootstrap.bind(host, port).sync();

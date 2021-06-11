@@ -28,4 +28,7 @@ public class RpcRequest implements Serializable {
     private Object[] params;
     // 参数类型
     private Class<?>[] paramsTypes;
+
+    //消息ID （Rpc请求ID）  使得返回的消息能与请求匹配
+    private String messageId;
 }

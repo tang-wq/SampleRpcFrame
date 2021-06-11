@@ -10,7 +10,7 @@ import java.util.concurrent.*;
 public class SampleThreadPool {
 
     // 成员变量
-    private volatile ExecutorService executor;
+    private volatile static ExecutorService executor;
 
     //单例模式创建
     public ExecutorService getExecutorService(){

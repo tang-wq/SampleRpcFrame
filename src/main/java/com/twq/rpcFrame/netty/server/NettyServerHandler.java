@@ -2,6 +2,7 @@ package com.twq.rpcFrame.netty.server;
 
 import com.twq.rpcFrame.entity.RpcRequest;
 import com.twq.rpcFrame.entity.RpcResponse;
+import com.twq.rpcFrame.netty.ThreadPool.SampleThreadPool;
 import com.twq.rpcFrame.provider.ServiceProvider;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -11,6 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutorService;
 
 /**
  * @Author: tangwq
@@ -23,15 +26,25 @@ public class NettyServerHandler extends ChannelInboundHandlerAdapter {
     //这个变量贯穿整个RPC请求的服务端，(所有这个变量 他都是相同的对象)因为需要注册服务接口和实现类的映射。
     private ServiceProvider serviceProvider;
 
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
 
+
+        InetSocketAddress inetSocketAddress = (InetSocketAddress) ctx.channel().remoteAddress();
+
+        System.out.println("客户端的IP和端口是："+inetSocketAddress.getAddress()+":"+inetSocketAddress.getPort());
+
         //服务端必然接收的是RpcRequest
         RpcRequest rpcRequest = (RpcRequest) msg;
+        System.out.println(rpcRequest);
 
         RpcResponse response = doRpcResponse(rpcRequest);
-
         ctx.writeAndFlush(response);
+
+
+
+
     }
 
     @Override
@@ -66,7 +79,7 @@ public class NettyServerHandler extends ChannelInboundHandlerAdapter {
             method = service.getClass().getMethod(rpcRequest.getMethodName(), rpcRequest.getParamsTypes());
             //调用执行对应的方法 （反射方式调用执行）
             Object invoke = method.invoke(service, rpcRequest.getParams());
-            return RpcResponse.success(invoke);
+            return RpcResponse.success(invoke,rpcRequest.getMessageId());
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             e.printStackTrace();
             logger.info("服务方法执行异常");
