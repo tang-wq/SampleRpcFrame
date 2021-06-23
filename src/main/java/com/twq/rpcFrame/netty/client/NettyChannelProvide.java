@@ -3,6 +3,8 @@ package com.twq.rpcFrame.netty.client;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.pool.ChannelPoolMap;
+import io.netty.channel.pool.SimpleChannelPool;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.slf4j.Logger;
@@ -25,6 +27,8 @@ public class NettyChannelProvide {
     private static final Bootstrap bootstrap;
 
     private static Map<String, Channel> channels;
+
+
 
     static {
 

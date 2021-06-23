@@ -4,10 +4,14 @@ import com.twq.rpcFrame.entity.RpcRequest;
 import com.twq.rpcFrame.entity.RpcResponse;
 import com.twq.rpcFrame.entity.RpcService;
 import com.twq.rpcFrame.netty.ThreadPool.SampleThreadPool;
+import com.twq.rpcFrame.netty.client.channelPool.ChannelPool;
+import com.twq.rpcFrame.netty.client.channelPool.NettyChannelPoolProvide;
 import com.twq.rpcFrame.register.NacosServiceDiscovery;
 import io.netty.channel.*;
 
 import java.lang.reflect.Proxy;
+import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -32,17 +36,17 @@ public class NettyClient{
 
     private AsyncRpcFutures asyncRpcFutures;
 
-
+    private ChannelPool channelPool;
 
 
     public NettyClient(){
         nacosServiceDiscovery = new NacosServiceDiscovery();
         asyncRpcFutures = new AsyncRpcFutures();
+        channelPool = new NettyChannelPoolProvide();
     }
 
     // 使用代理模式 获取代理对象
     public Object getBean(final Class<?> serviceClass){
-
 
         /**
          * 通过Proxy.newProxyInstance代理方法 获取一个代理对象
@@ -59,7 +63,7 @@ public class NettyClient{
                             .methodName(method.getName()).params(args).paramsTypes(method.getParameterTypes()).messageId(UUID.randomUUID().toString()).build();
 
 
-                    CompletableFuture<RpcResponse> completeFuture = null;
+                    CompletableFuture<RpcResponse> completeFuture;
 
                     // 从Nacos注册中心获取服务的信息
                     RpcService rpcService = nacosServiceDiscovery.getSingleService(method.getDeclaringClass().getName());
@@ -87,12 +91,16 @@ public class NettyClient{
     public CompletableFuture<RpcResponse> sendRequest(RpcRequest rpcRequest, RpcService rpcService){
         CompletableFuture<RpcResponse> resultFuture = new CompletableFuture<>();
         try {
-            Channel channel = NettyChannelProvide.get(rpcService.getAddrHost(), rpcService.getPort());
-
+            // Channel channel = NettyChannelProvide.get(rpcService.getAddrHost(), rpcService.getPort());
+            InetSocketAddress inetSocketAddress = new InetSocketAddress(rpcService.getAddrHost(),rpcService.getPort());
+            Channel channel = channelPool.getChannel(inetSocketAddress);
             System.out.println("发送的数据为：" + rpcRequest);
             // 发送数据
             channel.writeAndFlush(rpcRequest).sync();
             asyncRpcFutures.put(rpcRequest.getMessageId(),resultFuture);
+            // channel在这里释放回channelPool也可以，并不是说channel关闭了， 他还是监听者是否有数据传过来，并且出发channelRead。
+            // 因此还可以接收到对应的返回值。
+            channelPool.releaseChannel(channel,inetSocketAddress);
 
         } catch (ExecutionException e) {
             e.printStackTrace();

@@ -16,7 +16,7 @@ public class NettyClientHandler extends SimpleChannelInboundHandler{
 
     private AsyncRpcFutures asyncRpcFutures;
 
-    NettyClientHandler(){
+    public NettyClientHandler(){
         asyncRpcFutures = new AsyncRpcFutures();
     }
 
@@ -39,6 +39,7 @@ public class NettyClientHandler extends SimpleChannelInboundHandler{
      */
     @Override
     public  void  channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+        System.out.println("处理接收到信息的channel是"+ctx.channel().toString());
         // 获取服务端的响应对象
         result = (RpcResponse) msg;
         // 将响应结果放入对应的completableFuture中。
