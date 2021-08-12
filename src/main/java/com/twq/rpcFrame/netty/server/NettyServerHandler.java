@@ -33,22 +33,25 @@ public class NettyServerHandler extends ChannelInboundHandlerAdapter {
 
         InetSocketAddress inetSocketAddress = (InetSocketAddress) ctx.channel().remoteAddress();
 
-        System.out.println("客户端的IP和端口是："+inetSocketAddress.getAddress()+":"+inetSocketAddress.getPort());
+        // System.out.println("客户端的IP和端口是："+inetSocketAddress.getAddress()+":"+inetSocketAddress.getPort());
 
         //服务端必然接收的是RpcRequest
         RpcRequest rpcRequest = (RpcRequest) msg;
-        System.out.println(rpcRequest);
 
+        // 处理心跳包
+        if(rpcRequest.getIsHeartBeat()){
+            logger.info("接收到客户端的心跳包。。。");
+            return;
+        }
         RpcResponse response = doRpcResponse(rpcRequest);
         ctx.writeAndFlush(response);
-
-
-
 
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        cause.printStackTrace();
+        // 异常时 关闭Channel
         ctx.close();
     }
 

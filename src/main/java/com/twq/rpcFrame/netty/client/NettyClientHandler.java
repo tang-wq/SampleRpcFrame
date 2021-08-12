@@ -3,6 +3,7 @@ package com.twq.rpcFrame.netty.client;
 
 import com.twq.rpcFrame.entity.RpcResponse;
 import io.netty.channel.*;
+import io.netty.handler.timeout.IdleStateHandler;
 
 
 /**
@@ -10,6 +11,7 @@ import io.netty.channel.*;
  * @Description:
  */
 public class NettyClientHandler extends SimpleChannelInboundHandler{
+
 
     private RpcResponse result; //返回的结果
 

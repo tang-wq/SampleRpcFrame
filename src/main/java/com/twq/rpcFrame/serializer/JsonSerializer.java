@@ -7,6 +7,8 @@ import com.twq.rpcFrame.entity.RpcResponse;
 import com.twq.rpcFrame.entity.User;
 
 /**
+ * 优点 可读性强， 但是速度慢 占空间大
+ *
  * @Author: tangwq
  */
 public class JsonSerializer implements CommonSerializer{

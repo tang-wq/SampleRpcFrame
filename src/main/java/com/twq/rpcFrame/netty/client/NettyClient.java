@@ -60,7 +60,7 @@ public class NettyClient{
 
                     System.out.println(method.getDeclaringClass().getName());
                     RpcRequest rpcRequest = RpcRequest.builder().interfaceName(method.getDeclaringClass().getName())
-                            .methodName(method.getName()).params(args).paramsTypes(method.getParameterTypes()).messageId(UUID.randomUUID().toString()).build();
+                            .methodName(method.getName()).params(args).paramsTypes(method.getParameterTypes()).messageId(UUID.randomUUID().toString()).isHeartBeat(false).build();
 
 
                     CompletableFuture<RpcResponse> completeFuture;
@@ -94,9 +94,9 @@ public class NettyClient{
             // Channel channel = NettyChannelProvide.get(rpcService.getAddrHost(), rpcService.getPort());
             InetSocketAddress inetSocketAddress = new InetSocketAddress(rpcService.getAddrHost(),rpcService.getPort());
             Channel channel = channelPool.getChannel(inetSocketAddress);
-            System.out.println("发送的数据为：" + rpcRequest);
+            System.out.println("发送的数据为：" + channel.hashCode());
             // 发送数据
-            channel.writeAndFlush(rpcRequest).sync();
+            ChannelFuture channelFuture = channel.writeAndFlush(rpcRequest).sync();
             asyncRpcFutures.put(rpcRequest.getMessageId(),resultFuture);
             // channel在这里释放回channelPool也可以，并不是说channel关闭了， 他还是监听者是否有数据传过来，并且出发channelRead。
             // 因此还可以接收到对应的返回值。

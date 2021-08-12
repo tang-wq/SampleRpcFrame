@@ -2,13 +2,17 @@ package com.twq.rpcFrame.netty.server;
 
 import com.twq.rpcFrame.netty.codec.SelfDefineDecoder;
 import com.twq.rpcFrame.netty.codec.SelfDefineEncoder;
+import com.twq.rpcFrame.netty.server.idle.ServerIdleStateTrigger;
 import com.twq.rpcFrame.provider.ServiceProvider;
 import com.twq.rpcFrame.serializer.HessianSerializer;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 import lombok.AllArgsConstructor;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * 初始化器
@@ -26,8 +30,11 @@ public class NettyServerInitializer extends ChannelInitializer {
     @Override
     protected void initChannel(Channel channel) throws Exception {
         ChannelPipeline pipeline = channel.pipeline();
+        pipeline.addLast(new IdleStateHandler(30,0,0, TimeUnit.SECONDS));
+
         pipeline.addLast(new SelfDefineEncoder(new HessianSerializer()));
         pipeline.addLast(new SelfDefineDecoder());
         pipeline.addLast(eventExecutors, new NettyServerHandler(serviceProvider));
+        pipeline.addLast(new ServerIdleStateTrigger()); // 心跳超时处理器
     }
 }

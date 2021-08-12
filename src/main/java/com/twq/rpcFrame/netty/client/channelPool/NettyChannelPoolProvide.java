@@ -1,5 +1,6 @@
 package com.twq.rpcFrame.netty.client.channelPool;
 
+import com.twq.rpcFrame.netty.client.Idle.ClientIdleStateTrigger;
 import com.twq.rpcFrame.netty.client.NettyChannelProvide;
 import com.twq.rpcFrame.netty.client.NettyClientHandler;
 import com.twq.rpcFrame.netty.client.NettyClientInitializer;
@@ -13,6 +14,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.pool.*;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import org.slf4j.Logger;
@@ -20,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 使用Netty自带的ChannelPool
@@ -96,11 +99,16 @@ public class NettyChannelPoolProvide implements ChannelPool{
                     @Override
                     public void channelCreated(Channel channel) throws Exception {
                         ChannelPipeline pipeline = channel.pipeline();
+                        //添加心跳处理器，读操作5S后超时。
+                        pipeline.addLast(new IdleStateHandler(0,5,0, TimeUnit.SECONDS));
+
                         // 后期改成变量的形式，可以让使用者通过参数的形式选择编码器中的序列化器
                         pipeline.addLast(new SelfDefineEncoder(new HessianSerializer()));
+
                         // 添加解码器
                         pipeline.addLast(new SelfDefineDecoder());
                         pipeline.addLast(new NettyClientHandler());
+                        pipeline.addLast(new ClientIdleStateTrigger());
                     }
                 };
                 // 为一个目标服务器建立大小为2的channel池

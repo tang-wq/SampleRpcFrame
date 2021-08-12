@@ -52,6 +52,7 @@ public class SelfDefineDecoder extends ByteToMessageDecoder {
         int length = in.readInt();
         // 4. 读取序列化数组
         byte[] bytes = new byte[length];
+        // 将数据读入到bytes数组中
         in.readBytes(bytes);
         // 用对应的序列化器解码字节数组
         Object deserialize = serializer.deserialize(bytes, messageClass);

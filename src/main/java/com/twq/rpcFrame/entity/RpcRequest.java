@@ -31,4 +31,7 @@ public class RpcRequest implements Serializable {
 
     //消息ID （Rpc请求ID）  使得返回的消息能与请求匹配
     private String messageId;
+
+    //心跳标记  判断该数据包是否是心跳包。
+    private Boolean isHeartBeat;
 }

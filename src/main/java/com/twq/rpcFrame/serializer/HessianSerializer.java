@@ -14,7 +14,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 /**
- * Hessian序列化器
+ * Hessian序列化器  优点 跨语言
  *
  * 注意 Hessian序列化器 序列化的对象必须实现 java.io.Serializable 接口
  *
